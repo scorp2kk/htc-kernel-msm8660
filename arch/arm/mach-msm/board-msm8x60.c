@@ -23,7 +23,6 @@
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
 #include <asm/hardware/gic.h>
-
 #include <mach/board.h>
 #include <mach/msm_iomap.h>
 
@@ -46,8 +45,45 @@ static void __init msm8x60_init_irq(void)
 	/* RUMI does not adhere to GIC spec by enabling STIs by default.
 	 * Enable/clear is supposed to be RO for STIs, but is RW on RUMI.
 	 */
-	if (!machine_is_msm8x60_sim())
+	if (!machine_is_msm8x60_sim()) {
 		writel(0x0000FFFF, MSM_QGIC_DIST_BASE + GIC_DIST_ENABLE_SET);
+		msm_fb_add_devices();
+	}
+	fixup_i2c_configs();
+	register_i2c_devices();
+
+	if (machine_is_msm8x60_dragon())
+		smsc911x_config.reset_gpio
+			= GPIO_ETHERNET_RESET_N_DRAGON;
+
+	platform_device_register(&smsc911x_device);
+
+#if (defined(CONFIG_SPI_QUP)) && \
+	(defined(CONFIG_FB_MSM_LCDC_SAMSUNG_OLED_PT) || \
+	defined(CONFIG_FB_MSM_LCDC_AUO_WVGA) || \
+	defined(CONFIG_FB_MSM_LCDC_NT35582_WVGA))
+
+	if (machine_is_msm8x60_fluid()) {
+#ifdef CONFIG_FB_MSM_LCDC_SAMSUNG_OLED_PT
+		if (SOCINFO_VERSION_MAJOR(soc_platform_version) < 3) {
+			spi_register_board_info(lcdc_samsung_spi_board_info,
+				ARRAY_SIZE(lcdc_samsung_spi_board_info));
+		} else
+#endif
+		{
+#ifdef CONFIG_FB_MSM_LCDC_AUO_WVGA
+			spi_register_board_info(lcdc_auo_spi_board_info,
+				ARRAY_SIZE(lcdc_auo_spi_board_info));
+#endif
+		}
+#ifdef CONFIG_FB_MSM_LCDC_NT35582_WVGA
+	} else if (machine_is_msm8x60_dragon()) {
+		spi_register_board_info(lcdc_nt35582_spi_board_info,
+			ARRAY_SIZE(lcdc_nt35582_spi_board_info));
+#endif
+	}
+#endif
+>>>>>>> 3a8b851... msm:8060: lcdc nt35582 panel support
 
 	/* FIXME: Not installing AVS_SVICINT and AVS_SVICINTSWDONE yet
 	 * as they are configured as level, which does not play nice with
