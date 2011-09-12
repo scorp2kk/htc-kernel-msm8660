@@ -83,7 +83,6 @@ static void __init msm8x60_init_irq(void)
 #endif
 	}
 #endif
->>>>>>> 3a8b851... msm:8060: lcdc nt35582 panel support
 
 	/* FIXME: Not installing AVS_SVICINT and AVS_SVICINTSWDONE yet
 	 * as they are configured as level, which does not play nice with
