@@ -2270,7 +2270,12 @@ static struct attribute_group pyramid_properties_attr_group = {
 static int configure_uart_gpios(int on)
 {
 	int ret = 0, i;
-	int uart_gpios[] = {53, 54, 55, 56};
+	int uart_gpios[] = {
+		PYRAMID_GPIO_BT_UART1_TX,
+		PYRAMID_GPIO_BT_UART1_RX,
+		PYRAMID_GPIO_BT_UART1_CTS,
+		PYRAMID_GPIO_BT_UART1_RTS,
+	};
 	for (i = 0; i < ARRAY_SIZE(uart_gpios); i++) {
 		if (on) {
 			ret = msm_gpiomux_get(uart_gpios[i]);

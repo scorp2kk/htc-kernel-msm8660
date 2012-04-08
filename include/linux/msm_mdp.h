@@ -86,6 +86,7 @@ enum {
 	MDP_RGB_565,      /* RGB 565 planer */
 	MDP_XRGB_8888,    /* RGB 888 padded */
 	MDP_Y_CBCR_H2V2,  /* Y and CbCr, pseudo planer w/ Cb is in MSB */
+	MDP_Y_CBCR_H2V2_ADRENO,
 	MDP_ARGB_8888,    /* ARGB 888 */
 	MDP_RGB_888,      /* RGB 888 planer */
 	MDP_Y_CRCB_H2V2,  /* Y and CrCb, pseudo planer w/ Cr is in MSB */
@@ -236,6 +237,7 @@ struct msmfb_data {
 	int id;
 	uint32_t flags;
 	uint32_t priv;
+	uint32_t iova;
 };
 
 #define MSMFB_NEW_REQUEST -1
