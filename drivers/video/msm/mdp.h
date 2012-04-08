@@ -240,6 +240,12 @@ struct mdp_hist_lut_info {
 	int bank_sel;
 };
 
+struct mdp_reg {
+    uint32_t reg;
+    uint32_t val;
+    uint32_t mask;
+};
+
 #define MDP_CMD_DEBUG_ACCESS_BASE   (MDP_BASE+0x10000)
 
 #define MDP_DMA2_TERM 0x1

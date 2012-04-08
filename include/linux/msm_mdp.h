@@ -1,6 +1,7 @@
 /* include/linux/msm_mdp.h
  *
  * Copyright (C) 2007 Google Incorporated
+ * Copyright (c) 2012 Code Aurora Forum. All rights reserved.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -55,10 +56,8 @@
 #define MSMFB_OVERLAY_PLAY_WAIT _IOWR(MSMFB_IOCTL_MAGIC, 149, \
 						struct msmfb_overlay_data)
 #define MSMFB_WRITEBACK_INIT _IO(MSMFB_IOCTL_MAGIC, 150)
-#define MSMFB_WRITEBACK_REGISTER_BUFFER _IOW(MSMFB_IOCTL_MAGIC, 151, \
-						struct msmfb_writeback_data)
-#define MSMFB_WRITEBACK_UNREGISTER_BUFFER _IOW(MSMFB_IOCTL_MAGIC, 152, \
-						struct msmfb_writeback_data)
+#define MSMFB_WRITEBACK_START _IO(MSMFB_IOCTL_MAGIC, 151)
+#define MSMFB_WRITEBACK_STOP _IO(MSMFB_IOCTL_MAGIC, 152)
 #define MSMFB_WRITEBACK_QUEUE_BUFFER _IOW(MSMFB_IOCTL_MAGIC, 153, \
 						struct msmfb_data)
 #define MSMFB_WRITEBACK_DEQUEUE_BUFFER _IOW(MSMFB_IOCTL_MAGIC, 154, \
@@ -78,14 +77,13 @@
 enum {
 	NOTIFY_UPDATE_START,
 	NOTIFY_UPDATE_STOP,
-	NOTIFY_TERMINATE_BLOCKING,
-	NOTIFY_NUM,
 };
 
 enum {
 	MDP_RGB_565,      /* RGB 565 planer */
 	MDP_XRGB_8888,    /* RGB 888 padded */
 	MDP_Y_CBCR_H2V2,  /* Y and CbCr, pseudo planer w/ Cb is in MSB */
+	MDP_Y_CBCR_H2V2_ADRENO,
 	MDP_ARGB_8888,    /* ARGB 888 */
 	MDP_RGB_888,      /* RGB 888 planer */
 	MDP_Y_CRCB_H2V2,  /* Y and CrCb, pseudo planer w/ Cr is in MSB */
@@ -147,8 +145,9 @@ enum {
 #define MDP_OV_PLAY_NOWAIT		0x00200000
 #define MDP_SOURCE_ROTATED_90		0x00100000
 #define MDP_DPP_HSIC			0x00080000
+#define MDP_BACKEND_COMPOSITION		0x00040000
 #define MDP_BORDERFILL_SUPPORTED	0x00010000
-#define MDP_SECURE_OVERLAY_SESSION	0x00008000
+#define MDP_SECURE_OVERLAY_SESSION      0x00008000
 #define MDP_MEMORY_ID_TYPE_FB		0x00001000
 
 #define MDP_TRANSP_NOP 0xffffffff
@@ -236,6 +235,7 @@ struct msmfb_data {
 	int id;
 	uint32_t flags;
 	uint32_t priv;
+	uint32_t iova;
 };
 
 #define MSMFB_NEW_REQUEST -1
@@ -243,11 +243,9 @@ struct msmfb_data {
 struct msmfb_overlay_data {
 	uint32_t id;
 	struct msmfb_data data;
-#ifndef CONFIG_FB_MSM_OVERLAY_LEGACY
 	uint32_t version_key;
 	struct msmfb_data plane1_data;
 	struct msmfb_data plane2_data;
-#endif
 };
 
 struct msmfb_img {
@@ -284,9 +282,7 @@ struct mdp_overlay {
 	uint32_t flags;
 	uint32_t id;
 	uint32_t user_data[8];
-#ifndef CONFIG_FB_MSM_OVERLAY_LEGACY
 	struct dpp_ctrl dpp;
-#endif
 };
 
 struct msmfb_overlay_3d {
@@ -346,6 +342,10 @@ struct mdp_pcc_cfg_data {
 	uint32_t ops;
 	struct mdp_pcc_coeff r, g, b;
 };
+
+#define MDP_CSC_FLAG_ENABLE	0x1
+#define MDP_CSC_FLAG_YUV_IN	0x2
+#define MDP_CSC_FLAG_YUV_OUT	0x4
 
 struct mdp_csc_cfg {
 	/* flags for enable CSC, toggling RGB,YUV input/output */
@@ -457,14 +457,12 @@ struct msmfb_mixer_info_req {
 int get_fb_phys_info(unsigned long *start, unsigned long *len, int fb_num);
 struct fb_info *msm_fb_get_writeback_fb(void);
 int msm_fb_writeback_init(struct fb_info *info);
-int msm_fb_writeback_register_buffer(struct fb_info *info,
-		struct msmfb_writeback_data *data);
+int msm_fb_writeback_start(struct fb_info *info);
 int msm_fb_writeback_queue_buffer(struct fb_info *info,
 		struct msmfb_data *data);
 int msm_fb_writeback_dequeue_buffer(struct fb_info *info,
 		struct msmfb_data *data);
-int msm_fb_writeback_unregister_buffer(struct fb_info *info,
-		struct msmfb_writeback_data *data);
+int msm_fb_writeback_stop(struct fb_info *info);
 int msm_fb_writeback_terminate(struct fb_info *info);
 #endif
 

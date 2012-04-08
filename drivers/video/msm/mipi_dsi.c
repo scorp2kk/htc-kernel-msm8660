@@ -359,8 +359,8 @@ static int mipi_dsi_probe(struct platform_device *pdev)
 		size =  resource_size(&pdev->resource[0]);
 		mipi_dsi_base =  ioremap(pdev->resource[0].start, size);
 
-		MSM_FB_INFO("mipi_dsi base phy_addr = 0x%x virt = 0x%x\n",
-				pdev->resource[0].start, (int) mipi_dsi_base);
+		MSM_FB_INFO("mipi_dsi base phy_addr = 0x%x virt = 0x%x rev=%d\n",
+				pdev->resource[0].start, (int) mipi_dsi_base, mdp_rev);
 
 		if (!mipi_dsi_base)
 			return -ENOMEM;
@@ -433,7 +433,10 @@ static int mipi_dsi_probe(struct platform_device *pdev)
 	mipi_dsi_clk_init(&pdev->dev);
 
 	if (!mipi_dsi_resource_initialized)
+	{
+		pr_err("mipi_dsi: resource NOT initialized!!\n");
 		return -EPERM;
+	}
 
 	mfd = platform_get_drvdata(pdev);
 

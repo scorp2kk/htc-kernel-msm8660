@@ -399,12 +399,13 @@ struct msm_panel_common_pdata {
 	struct msm_bus_scale_pdata *mdp_bus_scale_table;
 #endif
 	int mdp_rev;
+	int (*mdp_color_enhance)(void);
+	int (*mdp_gamma)(void);
+	struct mdp_reg *color_enhancment_tbl;
 	u32 ov0_wb_size;  /* overlay0 writeback size */
 	u32 ov1_wb_size;  /* overlay1 writeback size */
 	u32 mem_hid;
 };
-
-
 
 struct lcdc_platform_data {
 	int (*lcdc_gpio_config)(int on);
@@ -458,11 +459,13 @@ struct mipi_dsi_panel_platform_data {
 	int *gpio;
 	struct mipi_dsi_phy_ctrl *phy_ctrl_settings;
 	char dlane_swap;
+	unsigned char (*shrink_pwm)(int val);
 };
 
 struct lvds_panel_platform_data {
 	int *gpio;
 };
+
 
 #define PANEL_NAME_MAX_LEN 50
 struct msm_fb_platform_data {

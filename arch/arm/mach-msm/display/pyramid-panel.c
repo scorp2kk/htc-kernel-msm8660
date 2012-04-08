@@ -472,13 +472,6 @@ static struct lcdc_platform_data lcdc_pdata = {
 int pyd_esd_fixup(uint32_t mfd_data)
 {
 	/* do two read_scan_line consecutively to avoid flicking */
-	if (mipi_novatek_read_scan_line(mfd_data) == 0xf7ff) {
-		hr_msleep(1);
-		if (mipi_novatek_read_scan_line(mfd_data) == 0xf7ff) {
-			pr_info("%s\n", __func__);
-			mipi_novatek_restart_vcounter(mfd_data);
-		}
-	}
 
 	return 0;
 }
@@ -570,8 +563,7 @@ static unsigned char pyd_auo_shrink_pwm(int br)
 	return shrink_br;
 }
 
-static struct msm_panel_common_pdata mipi_novatek_panel_data = {
-	.shrink_pwm = NULL,
+static struct mipi_dsi_panel_platform_data mipi_novatek_panel_data = {
 };
 
 static struct platform_device mipi_dsi_cmd_sharp_qhd_panel_device = {
@@ -598,9 +590,8 @@ static int msm_fb_detect_panel(const char *name)
 
 static struct msm_fb_platform_data msm_fb_pdata = {
 	.detect_client = msm_fb_detect_panel,
-	.blt_mode = 1,
-	.width = 53,
-	.height = 95,
+  .prim_panel_name = "mipi_cmd_novatek_qhd",
+  .ext_panel_name=""
 };
 
 static struct platform_device msm_fb_device = {
@@ -1245,7 +1236,7 @@ int __init pyd_init_panel(struct resource *res, size_t size)
 	msm_fb_device.resource = res;
 	msm_fb_device.num_resources = size;
 
-#if 1
+#if 0
 	/* Cancel the fixup temporally due to it's cause flicking problem. */
 	if (panel_type == PANEL_ID_PYD_AUO_NT)
 		mipi_pdata.esd_fixup = pyd_esd_fixup;
