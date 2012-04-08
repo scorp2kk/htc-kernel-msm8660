@@ -9,11 +9,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
- * 02110-1301, USA.
- *
  */
 
 #include <linux/module.h>
@@ -37,7 +32,6 @@
 
 #include "msm_fb.h"
 #include "mdp4.h"
-#include <mach/debug_display.h>
 
 static int dtv_probe(struct platform_device *pdev);
 static int dtv_remove(struct platform_device *pdev);
@@ -49,8 +43,6 @@ static struct platform_device *pdev_list[MSM_FB_MAX_DEV_LIST];
 static int pdev_list_cnt;
 
 static struct clk *tv_src_clk;
-static struct clk *tv_enc_clk;
-static struct clk *tv_dac_clk;
 static struct clk *hdmi_clk;
 static struct clk *mdp_tv_clk;
 
@@ -97,10 +89,8 @@ static int dtv_off(struct platform_device *pdev)
 
 	ret = panel_next_off(pdev);
 
-	PR_DISP_INFO("%s\n", __func__);
+	pr_info("%s\n", __func__);
 
-	clk_disable(tv_enc_clk);
-	clk_disable(tv_dac_clk);
 	clk_disable(hdmi_clk);
 	if (mdp_tv_clk)
 		clk_disable(mdp_tv_clk);
@@ -119,6 +109,7 @@ static int dtv_off(struct platform_device *pdev)
 		clk_disable(ebi1_clk);
 #endif
 	mdp4_extn_disp = 0;
+	mdp_footswitch_ctrl(FALSE);
 	return ret;
 }
 
@@ -136,7 +127,7 @@ static int dtv_on(struct platform_device *pdev)
 		pm_qos_rate = panel_pixclock_freq / 1000 ;
 	else
 		pm_qos_rate = 58000;
-	mdp_set_core_clk(1);
+	mdp_footswitch_ctrl(TRUE);
 	mdp4_extn_disp = 1;
 #ifdef CONFIG_MSM_BUS_SCALING
 	if (dtv_bus_scale_handle > 0)
@@ -152,17 +143,14 @@ static int dtv_on(struct platform_device *pdev)
 
 	ret = clk_set_rate(tv_src_clk, mfd->fbi->var.pixclock);
 	if (ret) {
-		PR_DISP_INFO("%s: clk_set_rate(%d) failed\n", __func__,
+		pr_info("%s: clk_set_rate(%d) failed\n", __func__,
 			mfd->fbi->var.pixclock);
 		if (mfd->fbi->var.pixclock == 27030000)
 			mfd->fbi->var.pixclock = 27000000;
 		ret = clk_set_rate(tv_src_clk, mfd->fbi->var.pixclock);
 	}
-	PR_DISP_INFO("%s: tv_src_clk=%dkHz, pm_qos_rate=%ldkHz, [%d]\n", __func__,
+	pr_info("%s: tv_src_clk=%dkHz, pm_qos_rate=%ldkHz, [%d]\n", __func__,
 		mfd->fbi->var.pixclock/1000, pm_qos_rate, ret);
-
-	clk_enable(tv_enc_clk);
-	clk_enable(tv_dac_clk);
 
 	clk_enable(hdmi_clk);
 	clk_reset(hdmi_clk, CLK_RESET_ASSERT);
@@ -221,7 +209,7 @@ static int dtv_probe(struct platform_device *pdev)
 	if (platform_device_add_data
 	    (mdp_dev, pdev->dev.platform_data,
 	     sizeof(struct msm_fb_panel_data))) {
-		printk(KERN_ERR "dtv_probe: platform_device_add_data failed!\n");
+		pr_err("dtv_probe: platform_device_add_data failed!\n");
 		platform_device_put(mdp_dev);
 		return -ENOMEM;
 	}
@@ -237,7 +225,10 @@ static int dtv_probe(struct platform_device *pdev)
 	 * get/set panel specific fb info
 	 */
 	mfd->panel_info = pdata->panel_info;
-	mfd->fb_imgType = MDP_RGB_565;
+	if (hdmi_prim_display)
+		mfd->fb_imgType = MSMFB_DEFAULT_TYPE;
+	else
+		mfd->fb_imgType = MDP_RGB_565;
 
 	fbi = mfd->fbi;
 	fbi->var.pixclock = mfd->panel_info.clk_rate;
@@ -255,7 +246,7 @@ static int dtv_probe(struct platform_device *pdev)
 			msm_bus_scale_register_client(
 					dtv_pdata->bus_scale_table);
 		if (!dtv_bus_scale_handle) {
-			printk(KERN_ERR "%s not able to get bus scale\n",
+			pr_err("%s not able to get bus scale\n",
 				__func__);
 		}
 	}
@@ -263,7 +254,7 @@ static int dtv_probe(struct platform_device *pdev)
 	ebi1_clk = clk_get(NULL, "ebi1_dtv_clk");
 	if (IS_ERR(ebi1_clk)) {
 		ebi1_clk = NULL;
-		PR_DISP_WARN("%s: Couldn't get ebi1 clock\n", __func__);
+		pr_warning("%s: Couldn't get ebi1 clock\n", __func__);
 	}
 #endif
 	/*
@@ -315,28 +306,15 @@ static int dtv_register_driver(void)
 
 static int __init dtv_driver_init(void)
 {
-	tv_enc_clk = clk_get(NULL, "tv_enc_clk");
-	if (IS_ERR(tv_enc_clk)) {
-		printk(KERN_ERR "error: can't get tv_enc_clk!\n");
-		return IS_ERR(tv_enc_clk);
-	}
-
-	tv_dac_clk = clk_get(NULL, "tv_dac_clk");
-	if (IS_ERR(tv_dac_clk)) {
-		printk(KERN_ERR "error: can't get tv_dac_clk!\n");
-		return IS_ERR(tv_dac_clk);
-	}
-
 	tv_src_clk = clk_get(NULL, "tv_src_clk");
 	if (IS_ERR(tv_src_clk)) {
-		tv_src_clk = tv_enc_clk; /* Fallback to slave */
-		PR_DISP_INFO("%s: tv_src_clk not available, using tv_enc_clk"
-			" instead\n", __func__);
+		pr_err("error: can't get tv_src_clk!\n");
+		return IS_ERR(tv_src_clk);
 	}
 
 	hdmi_clk = clk_get(NULL, "hdmi_clk");
 	if (IS_ERR(hdmi_clk)) {
-		printk(KERN_ERR "error: can't get hdmi_clk!\n");
+		pr_err("error: can't get hdmi_clk!\n");
 		return IS_ERR(hdmi_clk);
 	}
 

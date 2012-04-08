@@ -79,16 +79,6 @@ config FB_MSM_MDP40
 	  Say Y here if this is msm7x30 variant platform.
 endchoice
 
-config FB_MSM_LEGACY_MDP
-	bool
-	depends on FB_MSM && (MSM_MDP30 || MSM_MDP31 || MSM_MDP302)
-	default y
-
-config FB_MSM_MDP_PPP
-	bool
-	depends on FB_MSM_LEGACY_MDP
-	default y
-
 config FB_MSM_EBI2
 	bool
 	default n
@@ -102,13 +92,16 @@ config FB_MSM_MIPI_DSI
 	default n
 
 config FB_MSM_LCDC
-	bool "Support for integrated LCD controller in qsd8x50, MSM7x27, MSM7x30 and MSM8x60"
-	depends on FB_MSM && (MSM_MDP31 || MSM_MDP302 || MSM_MDP40)
+	bool
+	default n
+
+config FB_MSM_LVDS
+	bool
 	default n
 
 config FB_MSM_OVERLAY
-	bool "Support for overlay in MSM7x30 and MSM8x60"
-	depends on FB_MSM && FB_MSM_MDP40
+	depends on FB_MSM_MDP40 && ANDROID_PMEM
+	bool "MDP4 overlay support"
 	default n
 
 config FB_MSM_DTV
@@ -116,40 +109,12 @@ config FB_MSM_DTV
 	bool
 	default n
 
-config FB_MSM_MDP_ABL
-	bool "Support QCT auto backlight scaling"
-	depends on FB_MSM && (MSM_MDP40)
-	default n
-
-choice
-	prompt "Default framebuffer color depth"
-	depends on MSM_MDP40 || MSM_MDP31
-	default FB_MSM_8X60_DEFAULT_DEPTH_RGBA8888
-
-config FB_MSM_8X60_DEFAULT_DEPTH_RGB565
-	bool "16 bits per pixel (RGB565)"
-
-config FB_MSM_8X60_DEFAULT_DEPTH_ARGB8888
-	bool "32 bits per pixel (ARGB8888)"
-
-config FB_MSM_8X60_DEFAULT_DEPTH_RGBA8888
-	bool "32 bits per pixel (RGBA8888)"
-
-endchoice
-
-config FB_MSM_SELF_REFRESH
-	bool "Use self refresh"
-	depends on FB_MSM
-	default n
-
 config FB_MSM_EXTMDDI
 	bool
 	default n
 
 config FB_MSM_TVOUT
-	bool "Support for TV-Out in qsd8x50"
-	depends on FB_MSM && (MSM_MDP31 || MSM_MDP40)
-	select FB_MSM_EXT_INTERFACE_COMMON
+	bool
 	default n
 
 config FB_MSM_MDDI_TOSHIBA_COMMON
@@ -197,25 +162,32 @@ config FB_MSM_MIPI_DSI_RENESAS
 	select FB_MSM_MIPI_DSI
 	default n
 
+config FB_MSM_MIPI_DSI_TRULY
+	bool
+	select FB_MSM_MIPI_DSI
+
 config FB_MSM_MIPI_DSI_SIMULATOR
 	bool
 	select FB_MSM_MIPI_DSI
 	default n
 
 config FB_MSM_MIPI_DSI_NOVATEK
-	bool
-	select FB_MSM_MIPI_DSI
-	default n
+        bool
+        select FB_MSM_MIPI_DSI
+        default n
 
-config FB_MSM_MIPI_DSI_HIMAX
+config FB_MSM_MIPI_DSI_NT35510
 	bool
 	select FB_MSM_MIPI_DSI
-	default n
 
 config FB_MSM_MIPI_DSI_ORISE
+        bool
+        select FB_MSM_MIPI_DSI
+        default n
+
+config FB_MSM_MIPI_DSI_NT35516
 	bool
 	select FB_MSM_MIPI_DSI
-	default n
 
 config FB_MSM_MIPI_DSI_TC358764_DSI2LVDS
 	bool
@@ -248,16 +220,6 @@ config FB_MSM_LCDC_SAMSUNG_WSVGA
 	bool
 	select FB_MSM_LCDC_PANEL
 	default n
-
-config FB_MSM_LCDC_AUO_WVGA
-	bool
-	select FB_MSM_LCDC_PANEL
-	default n
-
-config FB_MSM_LCDC_AUO_WXGA
-	bool
-	select FB_MSM_LCDC_PANEL
-	default y if MACH_VERDI_LTE
 
 config FB_MSM_LCDC_CHIMEI_WXGA
 	bool
@@ -304,12 +266,22 @@ config FB_MSM_LCDC_WXGA
 	select FB_MSM_LCDC_PANEL
 	default n
 
+config FB_MSM_LVDS_CHIMEI_WXGA
+	bool
+	select FB_MSM_LVDS
+	default n
+
 config FB_MSM_MIPI_TOSHIBA_VIDEO_WVGA_PT
 	bool
 	select FB_MSM_MIPI_DSI_TOSHIBA
 	default n
 
 config FB_MSM_MIPI_TOSHIBA_VIDEO_WSVGA_PT
+	bool
+	select FB_MSM_MIPI_DSI_TOSHIBA
+	default n
+
+config FB_MSM_MIPI_TOSHIBA_VIDEO_WUXGA
 	bool
 	select FB_MSM_MIPI_DSI_TOSHIBA
 	default n
@@ -324,14 +296,14 @@ config FB_MSM_MIPI_NOVATEK_CMD_QHD_PT
 	select FB_MSM_MIPI_DSI_NOVATEK
 	default n
 
-config FB_MSM_MIPI_RENESAS_VIDEO_WVGA_PT
+config FB_MSM_MIPI_ORISE_VIDEO_720P_PT
 	bool
-	select FB_MSM_MIPI_DSI_RENESAS
+	select FB_MSM_MIPI_DSI_ORISE
 	default n
 
-config FB_MSM_MIPI_RENESAS_CMD_WVGA_PT
+config FB_MSM_MIPI_ORISE_CMD_720P_PT
 	bool
-	select FB_MSM_MIPI_DSI_RENESAS
+	select FB_MSM_MIPI_DSI_ORISE
 	default n
 
 config FB_MSM_MIPI_RENESAS_VIDEO_FWVGA_PT
@@ -344,20 +316,26 @@ config FB_MSM_MIPI_RENESAS_CMD_FWVGA_PT
 	select FB_MSM_MIPI_DSI_RENESAS
 	default n
 
-config FB_MSM_MIPI_ORISE_CMD_QHD_PT
+config FB_MSM_MIPI_NT35510_VIDEO_WVGA_PT
 	bool
-	select FB_MSM_MIPI_DSI_ORISE
+	select FB_MSM_MIPI_DSI_NT35510
 	default n
 
-config FB_MSM_MIPI_HIMAX_VIDEO_720P_PT
+config FB_MSM_MIPI_NT35510_CMD_WVGA_PT
 	bool
-	select FB_MSM_MIPI_DSI_HIMAX
+	select FB_MSM_MIPI_DSI_NT35510
 	default n
 
-config FB_MSM_MIPI_HIMAX_CMD_720P_PT
-	bool
-	select FB_MSM_MIPI_DSI_HIMAX
-	default n
+config FB_MSM_MIPI_NT35516_VIDEO_QHD_PT
+        bool
+        select FB_MSM_MIPI_DSI_NT35516
+        default n
+
+config FB_MSM_MIPI_NT35516_CMD_QHD_PT
+        bool
+        select FB_MSM_MIPI_DSI_NT35516
+        default n
+
 
 config FB_MSM_MIPI_CHIMEI_WXGA
 	bool "LVDS Chimei WXGA Panel using Toshiba MIPI DSI-to-LVDS bridge."
@@ -368,18 +346,42 @@ config FB_MSM_MIPI_CHIMEI_WXGA
 	  The panel is connected to the host
 	  via Toshiba DSI-to-LVDS bridge.
 
+config FB_MSM_MIPI_CHIMEI_WUXGA
+	bool "LVDS Chimei WUXGA Panel using Toshiba MIPI DSI-to-LVDS bridge."
+	select FB_MSM_MIPI_DSI_TC358764_DSI2LVDS
+	---help---
+	  Support for Chimei WUXGA (1920x1200) panel.
+	  The panel is using a serial LVDS input.
+	  The panel is connected to the host
+	  via Toshiba DSI-to-LVDS bridge.
+
+config FB_MSM_MIPI_TRULY_VIDEO_WVGA_PT
+	bool
+	select FB_MSM_MIPI_DSI_TRULY
+
 config FB_MSM_MIPI_SIMULATOR_VIDEO
 	bool
 	select FB_MSM_MIPI_DSI_SIMULATOR
 	default n
 
-config FB_MSM_OVERLAY_WRITEBACK
+config FB_MSM_OVERLAY0_WRITEBACK
 	depends on FB_MSM_OVERLAY
-	bool "MDP overlay write back mode enable"
-	default y
+        bool "MDP overlay0 write back mode enable"
+	---help---
+	  Support for MDP4 OVERLAY0 write back mode
+
+
+config FB_MSM_OVERLAY1_WRITEBACK
+        depends on FB_MSM_OVERLAY
+        bool "MDP overlay1 write back mode enable"
+        ---help---
+          Support for MDP4 OVERLAY1 write back mode
+
+config FB_MSM_WRITEBACK_MSM_PANEL
+	depends on FB_MSM_OVERLAY
+        bool "MDP overlay write back panel enable"
 	---help---
 	  Support for MDP4 OVERLAY write back mode
-
 choice
 	prompt "LCD Panel"
 	default FB_MSM_MDDI_AUTO_DETECT
@@ -456,6 +458,12 @@ config FB_MSM_LCDC_SAMSUNG_OLED_PT_PANEL
 	---help---
 	  Support for LCDC Samsung OLED PT (480x800) panel
 
+config FB_MSM_LVDS_CHIMEI_WXGA_PANEL
+        bool "LVDS Chimei WXGA Panel"
+        select FB_MSM_LVDS_CHIMEI_WXGA
+        ---help---
+          Support for LVDS Chimei WXGA(1366x768) panel
+
 config FB_MSM_TRY_MDDI_CATCH_LCDC_PRISM
 	depends on FB_MSM_LCDC_HW
 	bool "MDDI Panel Auto Detect + LCDC Prism WVGA"
@@ -475,19 +483,23 @@ config FB_MSM_MIPI_PANEL_DETECT
 	bool "MIPI Panel Detect"
 	select FB_MSM_MIPI_TOSHIBA_VIDEO_WVGA_PT
 	select FB_MSM_MIPI_TOSHIBA_VIDEO_WSVGA_PT
+	select FB_MSM_MIPI_TOSHIBA_VIDEO_WUXGA
 	select FB_MSM_MIPI_RENESAS_VIDEO_FWVGA_PT
 	select FB_MSM_MIPI_RENESAS_CMD_FWVGA_PT
-	select FB_MSM_MIPI_RENESAS_CMD_WVGA_PT
+	select FB_MSM_MIPI_TRULY_VIDEO_WVGA_PT
 	select FB_MSM_MIPI_NOVATEK_VIDEO_QHD_PT
 	select FB_MSM_MIPI_NOVATEK_CMD_QHD_PT
-	select FB_MSM_MIPI_HIMAX_VIDEO_720P_PT
-	select FB_MSM_MIPI_ORISE_CMD_QHD_PT
+	select FB_MSM_MIPI_NT35510_VIDEO_WVGA_PT
+	select FB_MSM_MIPI_NT35510_CMD_WVGA_PT
+	select FB_MSM_MIPI_ORISE_VIDEO_720P_PT
+	select FB_MSM_MIPI_ORISE_CMD_720P_PT
+	select FB_MSM_MIPI_NT35516_VIDEO_QHD_PT
+	select FB_MSM_MIPI_NT35516_CMD_QHD_PT
 	select FB_MSM_MIPI_SIMULATOR_VIDEO
 	select FB_MSM_MIPI_CHIMEI_WXGA
-	select FB_MSM_MIPI_NOVATEK_CMD_HVGA_PT
-	select FB_MSM_MIPI_SAMSUNG_CMD_HVGA_PT
+	select FB_MSM_MIPI_CHIMEI_WUXGA
 	---help---
-	  Support for MIPI panel auto detect + LCDC panel
+	  Support for MIPI panel auto detect
 
 config FB_MSM_MDDI_PANEL_AUTO_DETECT
 	bool "MDDI Panel Auto Detect"
@@ -519,13 +531,34 @@ config FB_MSM_LCDC_MIPI_PANEL_AUTO_DETECT
 	select FB_MSM_MIPI_RENESAS_CMD_FWVGA_PT
 	select FB_MSM_MIPI_NOVATEK_VIDEO_QHD_PT
 	select FB_MSM_MIPI_NOVATEK_CMD_QHD_PT
+	select FB_MSM_MIPI_NT35510_VIDEO_WVGA_PT
+	select FB_MSM_MIPI_NT35510_CMD_WVGA_PT
+	select FB_MSM_MIPI_NT35516_VIDEO_QHD_PT
+	select FM_MSM_MIPI_NT35516_CMD_QHD_PT
 	select FB_MSM_MIPI_SIMULATOR_VIDEO
 	---help---
 	  Support for LCDC + MIPI panel auto detect
 
-config LCDC_TURN_ON_BL_AFTER_PANEL_ON
-	bool "Turn On BL again after turn on LCDC panel"
-	default n
+config FB_MSM_LVDS_MIPI_PANEL_DETECT
+	bool "LVDS + MIPI Panel Auto Detect"
+	select FB_MSM_LVDS_CHIMEI_WXGA
+	select FB_MSM_MIPI_TOSHIBA_VIDEO_WVGA_PT
+	select FB_MSM_MIPI_TOSHIBA_VIDEO_WSVGA_PT
+	select FB_MSM_MIPI_TOSHIBA_VIDEO_WUXGA
+	select FB_MSM_MIPI_RENESAS_VIDEO_FWVGA_PT
+	select FB_MSM_MIPI_RENESAS_CMD_FWVGA_PT
+	select FB_MSM_MIPI_TRULY_VIDEO_WVGA_PT
+	select FB_MSM_MIPI_NOVATEK_VIDEO_QHD_PT
+	select FB_MSM_MIPI_NOVATEK_CMD_QHD_PT
+	select FB_MSM_MIPI_NT35510_VIDEO_WVGA_PT
+	select FB_MSM_MIPI_NT35510_CMD_WVGA_PT
+	select FB_MSM_MIPI_ORISE_VIDEO_720P_PT
+	select FB_MSM_MIPI_ORISE_CMD_720P_PT
+	select FB_MSM_MIPI_SIMULATOR_VIDEO
+	select FB_MSM_MIPI_CHIMEI_WXGA
+	select FB_MSM_MIPI_CHIMEI_WUXGA
+	---help---
+	  Support for LVDS + MIPI panel auto detect
 
 config FB_MSM_MDDI_PRISM_WVGA
 	bool "MDDI Prism WVGA Panel"
@@ -565,6 +598,10 @@ config FB_MSM_MIPI_TOSHIBA_VIDEO_WSVGA_PT_PANEL
 	bool "MIPI Toshiba WSVGA PT Panel"
 	select FB_MSM_MIPI_TOSHIBA_VIDEO_WSVGA_PT
 
+config FB_MSM_MIPI_TOSHIBA_VIDEO_WUXGA_PANEL
+	bool "MIPI Toshiba WUXGA (1920x1200) Panel"
+	select FB_MSM_MIPI_TOSHIBA_VIDEO_WUXGA
+
 config FB_MSM_MIPI_NOVATEK_VIDEO_QHD_PT_PANEL
 	bool "MIPI NOVATEK VIDEO QHD PT Panel"
 	select FB_MSM_MIPI_NOVATEK_VIDEO_QHD_PT
@@ -572,6 +609,14 @@ config FB_MSM_MIPI_NOVATEK_VIDEO_QHD_PT_PANEL
 config FB_MSM_MIPI_NOVATEK_CMD_QHD_PT_PANEL
 	bool "MIPI NOVATEK CMD QHD PT Panel"
 	select FB_MSM_MIPI_NOVATEK_CMD_QHD_PT
+
+config FB_MSM_MIPI_ORISE_VIDEO_720P_PT_PANEL
+	bool "MIPI ORISE VIDEO 720P PT Panel"
+	select FB_MSM_MIPI_ORISE_VIDEO_720P_PT
+
+config FB_MSM_MIPI_ORISE_CMD_720P_PT_PANEL
+	bool "MIPI ORISE CMD 720P PT Panel"
+	select FB_MSM_MIPI_ORISE_CMD_720P_PT
 
 config FB_MSM_MIPI_RENESAS_VIDEO_FWVGA_PT_PANEL
 	bool "MIPI Renesas Video FWVGA PT Panel"
@@ -585,6 +630,30 @@ config FB_MSM_MIPI_CHIMEI_WXGA_PANEL
 	bool "MIPI Chimei WXGA PT Panel"
 	select FB_MSM_MIPI_CHIMEI_WXGA
 
+config FB_MSM_MIPI_CHIMEI_WUXGA_PANEL
+	bool "MIPI Chimei WUXGA Panel"
+	select FB_MSM_MIPI_CHIMEI_WUXGA
+
+config FB_MSM_MIPI_TRULY_VIDEO_WVGA_PT_PANEL
+	bool "MIPI Truly Video WVGA PT Panel"
+	select FB_MSM_MIPI_TRULY_VIDEO_WVGA_PT
+
+config FB_MSM_MIPI_NT35510_VIDEO_WVGA_PT_PANEL
+	bool "MIPI NT35510 Video WVGA PT Panel"
+	select FB_MSM_MIPI_NT35510_VIDEO_WVGA_PT
+
+config FB_MSM_MIPI_NT35510_CMD_WVGA_PT_PANEL
+	bool "MIPI NT35510 Command WVGA PT Panel"
+	select FB_MSM_MIPI_NT35510_CMD_WVGA_PT
+
+config FB_MSM_MIPI_NT35516_VIDEO_QHD_PT_PANEL
+        bool "MIPI NT35516 Video qHD PT Panel"
+        select FB_MSM_MIPI_NT35516_VIDEO_QHD_PT
+
+config FB_MSM_MIPI_NT35516_CMD_QHD_PT_PANEL
+        bool "MIPI NT35516 Command qHD PT Panel"
+        select FB_MSM_MIPI_NT35516_CMD_QHD_PT
+
 config FB_MSM_MIPI_SIMULATOR_VIDEO_PANEL
 	bool "MIPI Simulator Video Panel"
 	select FB_MSM_MIPI_SIMULATOR_VIDEO
@@ -596,6 +665,7 @@ config FB_MSM_EBI2_TMD_QVGA_EPSON_QCIF
 	  Support for EBI2 TMD QVGA (240x320) and Epson QCIF (176x220) panel
 
 config FB_MSM_HDMI_AS_PRIMARY
+	depends on FB_MSM_HDMI_COMMON
 	bool "Use HDMI as primary panel"
 	---help---
 	Support for using HDMI as primary
@@ -653,11 +723,6 @@ config FB_MSM_HDMI_3D
 	bool
 	default n
 
-config MSM_DSI_CLK_AUTO_CALCULATE
-	bool "Use AUTO calculate"
-	depends on FB_MSM_MIPI_DSI
-	default n
-
 config FB_MSM_HDMI_ADV7520_PANEL
 	depends on FB_MSM_MDP40 && FB_MSM_OVERLAY
         bool "LCDC HDMI ADV7520 720p Panel"
@@ -678,25 +743,27 @@ config FB_MSM_HDMI_ADV7520_PANEL_HDCP_SUPPORT
 
 
 config FB_MSM_HDMI_MSM_PANEL
-	bool "Support for HDMI in QCT platform"
 	depends on FB_MSM_MDP40
+	bool "MSM HDMI 1080p Panel"
 	select FB_MSM_DTV
-	select FB_MSM_EXT_INTERFACE_COMMON
+        select FB_MSM_EXT_INTERFACE_COMMON
 	select FB_MSM_HDMI_COMMON
 	select FB_MSM_HDMI_3D
 	default n
+	---help---
+	  Support for 480p/720p/1080i/1080p output through MSM HDMI
 
 config FB_MSM_HDMI_MSM_PANEL_DVI_SUPPORT
-	bool "Use DVI mode"
 	depends on FB_MSM_HDMI_MSM_PANEL
+	bool "Use DVI mode"
 	default n
 	---help---
 	  Support for DVI mode for MSM HDMI 1080p Panel
 
 config FB_MSM_HDMI_MSM_PANEL_HDCP_SUPPORT
-	bool "Use HDCP mode"
 	depends on FB_MSM_HDMI_MSM_PANEL
-	default n
+	bool "Use HDCP mode"
+	default y
 	---help---
 	  Support for HDCP mode for MSM HDMI 1080p Panel
 	  Choose to enable HDCP
@@ -708,6 +775,15 @@ config FB_MSM_HDMI_MSM_PANEL_CEC_SUPPORT
 	---help---
 	  Support for HDMI CEC Feature
 	  Choose to enable CEC
+
+config FB_MSM_HDMI_MHL
+	depends on FB_MSM_HDMI_MSM_PANEL
+	bool 'HDMI to MHL support'
+	default n
+	---help---
+	  Support the HDMI to MHL conversion.
+	  MHL (Mobile High-Definition Link) technology
+	  uses USB connector to output HDMI content
 
 choice
 	depends on  (FB_MSM_MDP22 || FB_MSM_MDP31 || FB_MSM_MDP40)
@@ -783,7 +859,7 @@ endchoice
 
 choice
 	prompt "Default framebuffer color depth"
-	depends on FB_MSM_MDP303 || FB_MSM_MDP40 || FB_MSM_MDP31
+	depends on FB_MSM_MDP40 || FB_MSM_MDP31
 	default FB_MSM_DEFAULT_DEPTH_RGBA8888
 
 config FB_MSM_DEFAULT_DEPTH_RGB565
