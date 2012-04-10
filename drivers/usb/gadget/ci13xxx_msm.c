@@ -21,6 +21,33 @@
 
 #define MSM_USB_BASE	(udc->regs)
 
+#ifdef CONFIG_CONSOLE_POLL
+int usb_loop_poll_hw(void)
+{
+	u32 intr, intm;
+
+	intm = hw_cread(CAP_USBINTR, ~0);
+
+	/* Wait until an interrupt is pending */
+	for (;;) {
+		intr =  hw_cread(CAP_USBSTS, ~0);
+
+		if (intr&intm) /* .. found something */
+			break;
+	}
+
+	if (intr&intm)
+	{
+		pr_debug("%s: poll found interrupt.. intr=0x%08x\n", __func__, intr);
+
+		/* call interrupt handler */
+		udc_irq();
+	}
+
+	return 0;
+}
+#endif /* CONFIG_CONSOLE_POLL */
+
 static irqreturn_t msm_udc_irq(int irq, void *data)
 {
 	return udc_irq();
