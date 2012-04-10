@@ -28,6 +28,7 @@ static struct kgdb_io		kgdboc_io_ops;
 static int configured		= -1;
 
 static char config[MAX_CONFIG_LEN];
+static int config_retry_time = 0;
 static struct kparam_string kps = {
 	.string			= config,
 	.maxlen			= MAX_CONFIG_LEN,
@@ -142,12 +143,34 @@ static int kgdboc_option_setup(char *opt)
 
 __setup("kgdboc=", kgdboc_option_setup);
 
+static int kgdbretry_option_setup(char *opt)
+{
+	if (strlen(opt) > MAX_CONFIG_LEN) {
+		printk(KERN_ERR "kgdbretry: config string too long\n");
+		return -ENOSPC;
+	}
+	config_retry_time = simple_strtoul(opt, NULL, 10);
+
+	return 0;
+}
+
+__setup("kgdbretry=", kgdbretry_option_setup);
+
 static void cleanup_kgdboc(void)
 {
 	kgdboc_unregister_kbd();
 	if (configured == 1)
 		kgdb_unregister_io_module(&kgdboc_io_ops);
 }
+
+static int configure_kgdboc(void);
+static void ttycheck_func(struct work_struct *work)
+{
+	config_retry_time = 0;
+	configure_kgdboc();
+}
+
+static DECLARE_DELAYED_WORK(ttycheck_work, ttycheck_func);
 
 static int configure_kgdboc(void)
 {
@@ -176,7 +199,15 @@ static int configure_kgdboc(void)
 
 	p = tty_find_polling_driver(cptr, &tty_line);
 	if (!p)
+	{
+		printk(KERN_INFO "kgdb will retry in %d secs\n", config_retry_time);
+		if (config_retry_time > 0) {
+			INIT_DELAYED_WORK(&ttycheck_work, ttycheck_func);
+			schedule_delayed_work(&ttycheck_work, config_retry_time * HZ);
+			return -ENODEV;
+		}
 		goto noconfig;
+	}
 
 	cons = console_drivers;
 	while (cons) {
