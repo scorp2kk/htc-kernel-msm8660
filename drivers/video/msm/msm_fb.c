@@ -487,6 +487,7 @@ static int msm_fb_suspend_sub(struct msm_fb_data_type *mfd)
 	if ((!mfd) || (mfd->key != MFD_KEY))
 		return 0;
 
+	printk(KERN_INFO "[MSMFB] %s: clearing notify timer\n", __func__);
 	if (mfd->msmfb_no_update_notify_timer.function)
 		del_timer(&mfd->msmfb_no_update_notify_timer);
 	complete(&mfd->msmfb_no_update_notify);
@@ -494,11 +495,13 @@ static int msm_fb_suspend_sub(struct msm_fb_data_type *mfd)
 	/*
 	 * suspend this channel
 	 */
+	printk(KERN_INFO "[MSMFB] %s: suspending channel\n", __func__);
 	mfd->suspend.sw_refreshing_enable = mfd->sw_refreshing_enable;
 	mfd->suspend.op_enable = mfd->op_enable;
 	mfd->suspend.panel_power_on = mfd->panel_power_on;
 
 	if (mfd->op_enable) {
+		printk(KERN_INFO "[MSMFB] %s: blank sub\n", __func__);
 		ret =
 		     msm_fb_blank_sub(FB_BLANK_POWERDOWN, mfd->fbi,
 				      mfd->suspend.op_enable);
@@ -512,6 +515,7 @@ static int msm_fb_suspend_sub(struct msm_fb_data_type *mfd)
 	/*
 	 * try to power down
 	 */
+	printk(KERN_INFO "[MSMFB] %s: sending MDP_BLOCK_POWER_OFF\n", __func__);
 	mdp_pipe_ctrl(MDP_MASTER_BLOCK, MDP_BLOCK_POWER_OFF, FALSE);
 
 	/*
@@ -519,19 +523,23 @@ static int msm_fb_suspend_sub(struct msm_fb_data_type *mfd)
 	 * or wait until vsync-resync completes
 	 */
 	if ((mfd->dest == DISPLAY_LCD)) {
+		printk(KERN_INFO "[MSMFB] %s: DISPLAY_LCD\n", __func__);
 		if (mfd->panel_info.lcd.vsync_enable) {
+			printk(KERN_INFO "[MSMFB] %s: LCD vsync enabled\n", __func__);
 			if (mfd->panel_info.lcd.hw_vsync_mode) {
 				if (mfd->channel_irq != 0)
 					disable_irq(mfd->channel_irq);
 			} else {
 				volatile boolean vh_pending;
 				do {
+					printk(KERN_INFO "[MSMFB] %s: vsync_handler_pending\n", __func__);
 					vh_pending = mfd->vsync_handler_pending;
 				} while (vh_pending);
 			}
 		}
 	}
 
+	printk(KERN_INFO "[MSMFB] %s: end suspend sub\n", __func__);
 	return 0;
 }
 
@@ -753,10 +761,18 @@ static int msm_fb_blank_sub(int blank_mode, struct fb_info *info,
 		return -ENODEV;
 	}
 
+	printk(KERN_INFO "[MSMFB] %s: pdata at 0x%x\n", __func__, (uint32_t) pdata);
+
+	printk(KERN_INFO "[MSMFB] %s: pdata->on at 0x%x\n", __func__, (uint32_t) pdata->on);
+	printk(KERN_INFO "[MSMFB] %s: pdata->off at 0x%x\n", __func__, (uint32_t) pdata->off);
+
+	printk(KERN_INFO "[MSMFB] %s: blank_mode: %d\n", __func__, blank_mode);
 	switch (blank_mode) {
 	case FB_BLANK_UNBLANK:
 		if (!mfd->panel_power_on) {
+			printk(KERN_INFO "[MSMFB] %s: FB_BLANK_UNBLANK beginning msleep\n", __func__);
 			msleep(16);
+			printk(KERN_INFO "[MSMFB] %s: FB_BLANK_UNBLANK turning panel on\n", __func__);
 			ret = pdata->on(mfd->pdev);
 			if (ret == 0) {
 				mfd->panel_power_on = TRUE;
@@ -788,8 +804,13 @@ static int msm_fb_blank_sub(int blank_mode, struct fb_info *info,
 			mfd->panel_power_on = FALSE;
 			bl_updated = 0;
 
+			printk(KERN_INFO "[MSMFB] %s: default entering msleep\n", __func__);
 			msleep(16);
+			printk(KERN_INFO "[MSMFB] %s: default turning panel off\n", __func__);
+			if (!mfd->pdev)
+				printk(KERN_INFO "[MSMFB] %s: no pdev\n", __func__);
 			ret = pdata->off(mfd->pdev);
+			printk(KERN_INFO "[MSMFB] %s: ret: %d\n", __func__, ret);
 			if (ret)
 				mfd->panel_power_on = curr_pwr_state;
 
@@ -801,6 +822,7 @@ static int msm_fb_blank_sub(int blank_mode, struct fb_info *info,
 		break;
 	}
 
+	printk(KERN_INFO "[MSMFB] %s: exiting\n", __func__);
 	return ret;
 }
 

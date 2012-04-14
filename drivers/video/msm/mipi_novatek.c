@@ -1047,10 +1047,13 @@ static int mipi_novatek_lcd_off(struct platform_device *pdev)
 {
 	struct msm_fb_data_type *mfd;
 
+	PR_DISP_INFO("%s: getting fb_data_type\n", __func__);
+
 	mfd = platform_get_drvdata(pdev);
 
 	if (!mfd)
 		return -ENODEV;
+
 	if (mfd->key != MFD_KEY)
 		return -EINVAL;
 
@@ -1063,6 +1066,8 @@ static int mipi_novatek_lcd_off(struct platform_device *pdev)
 		printk(KERN_ERR "panel_type=0x%x not supported at power off\n",
 			panel_type);
 	}
+
+	PR_DISP_INFO("%s: exiting\n", __func__);
 
 	return 0;
 }
@@ -1238,6 +1243,9 @@ int mipi_novatek_device_register(struct msm_panel_info *pinfo,
 		return -ENOMEM;
 
 	novatek_panel_data.panel_info = *pinfo;
+
+	PR_DISP_INFO("%s: novatek_panel_data.on at: 0x%x\n", __func__, (uint32_t)novatek_panel_data.on);
+	PR_DISP_INFO("%s: novatek_panel_data.off at: 0x%x\n", __func__, (uint32_t)novatek_panel_data.off);
 
 	ret = platform_device_add_data(pdev, &novatek_panel_data,
 		sizeof(novatek_panel_data));
